@@ -1,0 +1,76 @@
+* Running on local URL:  http://0.0.0.0:7860
+
+To create a public link, set `share=True` in `launch()`.
+
+[17:51:08] Submitting PDFs for processing...
+Using voices: {'speaker-1': 'iP95p4xoKVk53GoZ742B', 'speaker-2': '9BWtsMINqrJLrRacOk9x'}
+[17:51:08] Job ID received: 4b6005ce-b1d4-4b14-90e9-7555a0a79af2
+[17:51:08] Connected to status WebSocket
+[17:51:08] Sent ready acknowledgment
+[17:51:08] pdf: pending - Job created
+[17:51:08] pdf: processing - Processing 1 PDFs
+[17:51:25] pdf: completed - All PDFs processed successfully
+[17:51:25] agent: pending - Job created
+[17:51:25] agent: processing - Initializing processing
+[17:51:25] agent: processing - Summarizing 1 PDFs
+[17:51:40] agent: processing - Generating initial outline
+[17:51:54] agent: processing - Converting raw outline to structured format
+[17:52:21] agent: processing - Processing segment 1/5: Introduction
+[17:52:21] agent: processing - Processing segment 2/5: Background and Key Points
+[17:52:21] agent: processing - Processing segment 3/5: Government Response and Critical Statements
+[17:52:21] agent: processing - Processing segment 4/5: Notable Concerns and Reactions
+[17:52:21] agent: processing - Processing segment 5/5: Conclusion
+[17:52:52] agent: processing - Generating dialogue
+[17:52:52] agent: processing - Converting segment 1/5 to dialogue
+[17:52:52] agent: processing - Converting segment 2/5 to dialogue
+[17:52:52] agent: processing - Converting segment 3/5 to dialogue
+[17:52:52] agent: processing - Converting segment 4/5 to dialogue
+[17:52:52] agent: processing - Converting segment 5/5 to dialogue
+[17:53:45] agent: processing - Combining dialogue segments
+[17:53:45] agent: processing - Combining segment 2/5 with existing dialogue
+[17:54:17] agent: processing - Combining segment 3/5 with existing dialogue
+[17:55:01] agent: processing - Combining segment 4/5 with existing dialogue
+[17:56:00] agent: processing - Combining segment 5/5 with existing dialogue
+[17:56:46] agent: processing - Formatting final conversation
+[17:57:39] agent: completed - Transcription completed successfully
+[17:57:39] tts: pending - Job created
+[17:57:48] tts: completed - Done
+
+[17:57:48] TTS processing completed, retrieving audio file...
+[17:57:48] Audio file saved as '/project/frontend/demo_outputs/b03e2031-6016-479c-a5da-0e78bdd8e8f7-output.mp3'
+
+[17:57:48] Testing saved podcasts endpoints...
+
+Testing list all podcasts endpoint...
+Found 10 saved podcasts
+Job ID not found yet, retrying in 5.0s... (attempt 1/5)
+Found 11 saved podcasts
+Successfully found job_id 4b6005ce-b1d4-4b14-90e9-7555a0a79af2 in saved podcasts list
+
+Testing individual podcast metadata endpoint...
+Retrieved metadata for podcast: 4b6005ce-b1d4-4b14-90e9-7555a0a79af2.mp3
+Metadata: {
+  "job_id": "4b6005ce-b1d4-4b14-90e9-7555a0a79af2",
+  "filename": "4b6005ce-b1d4-4b14-90e9-7555a0a79af2.mp3",
+  "created_at": "2025-04-21T17:57:48.508000+00:00",
+  "size": 22442796,
+  "transcription_params": {
+    "userId": "test-userid",
+    "name": "ishan-test",
+    "duration": 2,
+    "monologue": false,
+    "speaker_1_name": "Bob",
+    "speaker_2_name": "Kate",
+    "voice_mapping": {
+      "speaker-1": "iP95p4xoKVk53GoZ742B",
+      "speaker-2": "9BWtsMINqrJLrRacOk9x"
+    },
+    "guide": null,
+    "vdb_task": false
+  }
+}
+
+Testing individual podcast audio endpoint...
+Successfully retrieved audio data, size: 29924175 bytes
+JSON data saved to /project/frontend/demo_outputs/transcript_b03e2031-6016-479c-a5da-0e78bdd8e8f7.json
+JSON data saved to /project/frontend/demo_outputs/generation_history_b03e2031-6016-479c-a5da-0e78bdd8e8f7.json

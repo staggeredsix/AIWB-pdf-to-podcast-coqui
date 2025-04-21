@@ -1,0 +1,15 @@
+# Core dependencies
+websockets
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+redis
+asyncio
+minio
+httpx
+jinja2
+ruff
+ujson
+jupyterlab>3.0
+gradio

@@ -1,0 +1,184 @@
+services:
+  local-nim:
+    image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.3.3
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    ports:
+      - "8000:8000"
+    volumes:
+      - type: bind
+        source: nim_cache
+        target: /opt/nim/.cache/
+    environment:
+      - NIM_MODEL_PROFILE=193649a2eb95e821309d6023a2cabb31489d3b690a9973c7ab5d1ff58b0aa7eb
+      - NGC_API_KEY=${NVIDIA_API_KEY:?Error NVIDIA_API_KEY not set}
+      - NVIDIA_VISIBLE_DEVICES=1
+    networks:
+      - app-network
+    profiles:
+      - local
+      
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly no
+    networks:
+      - app-network
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    command: minio server /data --console-address ":9001"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+
+  api-service:
+    build:
+      context: ../
+      dockerfile: services/APIService/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - PDF_SERVICE_URL=http://pdf-service:8003
+      - AGENT_SERVICE_URL=http://agent-service:8964
+      - TTS_SERVICE_URL=http://tts-service:8889
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+      - pdf-service
+      - agent-service
+      - tts-service
+      - jaeger
+    networks:
+      - app-network
+
+  agent-service:
+    build:
+      context: ../
+      dockerfile: services/AgentService/Dockerfile
+    ports:
+      - "8964:8964"
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - REDIS_URL=redis://redis:6379
+      - MODEL_CONFIG_PATH=/app/config/models.json
+    volumes:
+      - ../models.json:/app/config/models.json
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  pdf-service:
+    build:
+      context: ../
+      dockerfile: services/PDFService/Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - MODEL_API_URL=${MODEL_API_URL:-http://pdf-api:8004}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  tts-service:
+    build:
+      context: ../
+      dockerfile: services/TTSService/Dockerfile
+    ports:
+      - "8889:8889"
+    environment:
+      - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317" # OTLP GRPC
+      - "4318:4318" # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "localhost:16686"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - app-network
+  
+  pdf-api:
+    build:
+      context: ../services/PDFService/PDFModelService
+      dockerfile: Dockerfile.api
+    ports:
+      - "8004:8004"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TEMP_FILE_DIR=/tmp/pdf_conversions
+    volumes:
+      - pdf_temp:/tmp/pdf_conversions
+    depends_on:
+      - redis
+      - celery-worker
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  celery-worker:
+    build:
+      context: ../services/PDFService/PDFModelService
+      dockerfile: Dockerfile.worker
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TEMP_FILE_DIR=/tmp/pdf_conversions
+    volumes:
+      - pdf_temp:/tmp/pdf_conversions
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  redis_data:
+  pdf_temp:
+  minio_data:
+  nim_cache:
+    external: true
+
+networks:
+  app-network:
+    driver: bridge
