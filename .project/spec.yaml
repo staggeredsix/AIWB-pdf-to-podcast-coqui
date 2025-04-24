@@ -92,6 +92,9 @@ environment:
             name: ""
             target: ""
     compose_file_path: workbench/docker-compose.yaml
+    compose-up-args:
+        - "--profile"
+        - "local"
 execution:
     apps:
         - name: frontend
