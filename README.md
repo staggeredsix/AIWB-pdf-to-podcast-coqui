@@ -2,9 +2,14 @@
 
 ## Overview
 
-This NVIDIA AI blueprint shows developers how to build an application that transforms PDFs into engaging audio content. Built on NVIDIA NIM, this blueprint is flexible, and can run securely on a private network, delivering actionable insight without sharing sensitive data. This blueprint has been modified to run completely locally. There are some leftover artifacts from the Elevelabs TTS pipeline that can be restored by renaming the .bak files. There's NO REQUIREMENT for an Elevenlabs API key. Set the Docker Compose profile to local before starting. This requires, currently, ONE NVIDIA GPU. Tested on 48GB workstation card.
+This NVIDIA AI blueprint shows developers how to build an application that transforms PDFs into engaging audio content. Built on NVIDIA NIM, this blueprint is flexible, and can run securely on a private network, delivering actionable insight without sharing sensitive data. 
 
-THIS IS FOR DEMONSTRATION. It is NOT a fully debugged project for UX. This was built to run the full pipeline locally.
+This blueprint has been modified to run completely locally. There are some leftover artifacts from the Elevelabs TTS pipeline that can be restored by renaming the .bak files. There's NO REQUIREMENT for an Elevenlabs API key. 
+
+Set the Docker Compose profile to local before starting.
+
+This requires, currently, ONE NVIDIA GPU. Tested on 48GB workstation card.
+FOR DEMONSTRATION. It is NOT a fully debugged project for UX. This was built to run the full pipeline locally.
 
 To enable single GPU mode, edit the docker-compose.yaml in AIWB :
 ```
