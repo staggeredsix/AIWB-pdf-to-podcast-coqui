@@ -2,10 +2,25 @@
 
 ## Overview
 
-This NVIDIA AI blueprint shows developers how to build an application that transforms PDFs into engaging audio content. Built on NVIDIA NIM, this blueprint is flexible, and can run securely on a private network, delivering actionable insight without sharing sensitive data. This blueprint has been modified to run completely locally. There are some leftover artifacts from the Elevelabs TTS pipeline that can be restored by renaming the .bak files. There's NO REQUIREMENT for an Elevenlabs API key. Set the Docker Compose profile to local before starting. This requires, currently, TWO NVIDIA GPUs. You should also assign ONE GPU to the project container, as this will speed up PDF processing. Ignore that there are no GPUs available and click "Continue without GPUs". The PDF processing will still occur on a GPU.
+This NVIDIA AI blueprint shows developers how to build an application that transforms PDFs into engaging audio content. Built on NVIDIA NIM, this blueprint is flexible, and can run securely on a private network, delivering actionable insight without sharing sensitive data. This blueprint has been modified to run completely locally. There are some leftover artifacts from the Elevelabs TTS pipeline that can be restored by renaming the .bak files. There's NO REQUIREMENT for an Elevenlabs API key. Set the Docker Compose profile to local before starting. This requires, currently, ONE NVIDIA GPU. Tested on 48GB workstation card.
 
 THIS IS FOR DEMONSTRATION. It is NOT a fully debugged project for UX. This was built to run the full pipeline locally.
 
+To enable single GPU mode, edit the docker-compose.yaml in AIWB :
+```
+services:
+  local-nim:
+    image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.3.3
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"] <-------- change to this on local-nim and tts services
+              capabilities: [gpu]
+```
+              
 <img width="1021" alt="Architecture Diagram" src="docs/architecture-diagram.png"/>
 
 The blueprint accepts a Target PDF and optionally multiple Context PDFs. The Target PDF will be the main source of information for the generated transcript while Context PDFs will be used as additional reference for the agent to use. The user can also optionally specify a guide prompt that will give a focus for the agent generated transcript (i.e. “Focus on the key drivers for NVIDIA’s Q3 earnings report”).
