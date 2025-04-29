@@ -115,7 +115,7 @@ execution:
             url: http://localhost:7860/
     resources:
         gpu:
-            requested: 1
+            requested: 0
         sharedMemoryMB: 16000
     secrets:
         - variable: ELEVENLABS_API_KEY
