@@ -11,7 +11,6 @@ Set the Docker Compose profile to local before starting.
 This requires, currently, ONE NVIDIA GPU. Tested on 48GB workstation card.
 FOR DEMONSTRATION. It is NOT a fully debugged project for UX. This was built to run the full pipeline locally.
 
-This project defaults to asking for 1 GPU for the project : this is incorrect. PLEASE SET TO NO GPUS for the project. The compose side needs GPUs.
 
 To enable single GPU mode, edit the docker-compose.yaml in AIWB :
 ```
