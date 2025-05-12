@@ -118,8 +118,8 @@ execution:
             requested: 0
         sharedMemoryMB: 16000
     secrets:
-        - variable: ELEVENLABS_API_KEY
-          description: ""
+        #- variable: ELEVENLABS_API_KEY
+          #description: ""
         - variable: NVIDIA_API_KEY
           description: ""
     mounts:
