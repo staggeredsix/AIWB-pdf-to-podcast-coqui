@@ -1,14 +1,14 @@
 {
   "reasoning": {
-    "name": "meta/llama-3.1-8b-instruct",
-    "api_base": "http://pdf-to-podcast-local-nim-1:8000/v1"
-  },
-  "json": {
-    "name": "meta/llama-3.1-8b-instruct",
-    "api_base": "http://pdf-to-podcast-local-nim-1:8000/v1"
+    "name": "llama3.3:70b-instruct-q2_K",
+    "api_base": "http://ollama:11434"
   },
   "iteration": {
-    "name": "meta/llama-3.1-8b-instruct",
-    "api_base": "http://pdf-to-podcast-local-nim-1:8000/v1"
+    "name": "llama3.3:70b-instruct-q2_K",
+    "api_base": "http://ollama:11434"
+  },
+  "json": {
+    "name": "llama3.3:70b-instruct-q2_K",
+    "api_base": "http://ollama:11434"
   }
 }
