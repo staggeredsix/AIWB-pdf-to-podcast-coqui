@@ -23,10 +23,10 @@ services:
     entrypoint: |
       sh -c '
       ollama serve &
-      pid=$$!
+      pid=$!
       sleep 5
       ollama pull llama3.3:70b-instruct-q2_K
-      wait $$pid
+      wait $pid
       '
 
   redis:
@@ -113,12 +113,13 @@ services:
   tts-service:
     build:
       context: ../
-      dockerfile: services/TTSService/Dockerfile
+      dockerfile: services/TTSService/Dockerfile.tortoise
     ports:
       - "8889:8889"
     environment:
       - REDIS_URL=redis://redis:6379
       - NVIDIA_VISIBLE_DEVICES=0
+      - MAX_CONCURRENT_REQUESTS=3
     deploy:
       resources:
         reservations:
@@ -130,6 +131,9 @@ services:
       - redis
     networks:
       - app-network
+    volumes:
+      # Mount volume for custom Tortoise voices (optional)
+      - tortoise_voices:/app/tortoise/voices
 
   jaeger:
     image: jaegertracing/all-in-one:latest
@@ -189,6 +193,7 @@ volumes:
   pdf_temp:
   minio_data:
   ollama_data:  # New volume for Ollama
+  tortoise_voices:  # Volume for custom Tortoise voices
 
 networks:
   app-network:
