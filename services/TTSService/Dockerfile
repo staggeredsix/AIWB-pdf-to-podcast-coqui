@@ -7,15 +7,18 @@ ENV NVIDIA_VISIBLE_DEVICES=0
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         python3 python3-pip python3-dev \
-        ffmpeg libsndfile1 libsox-dev libsox-fmt-all sox \
-        git curl unzip build-essential && \
+        ffmpeg libsndfile1 sox \
+        git curl unzip build-essential \
+        libsox-dev libsox-fmt-all && \
     rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
 RUN pip install --upgrade pip
-RUN apt-get update && apt-get install -y espeak-ng espeak
 
-# Python packages (Coqui TTS, Torch, tracing, API, etc.)
+# Install PyTorch with CUDA support
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Install TorToiSe requirements
 RUN pip install \
     ujson \
     fastapi \
@@ -23,8 +26,16 @@ RUN pip install \
     redis \
     httpx \
     soundfile \
-    torch \
-    TTS \
+    numpy \
+    scipy \
+    librosa \
+    transformers \
+    tokenizers \
+    inflect \
+    progressbar2 \
+    einops \
+    rotary_embedding_torch \
+    k_diffusion \
     opentelemetry-api \
     opentelemetry-sdk \
     opentelemetry-exporter-otlp \
@@ -35,6 +46,9 @@ RUN pip install \
     opentelemetry-instrumentation-requests \
     opentelemetry-instrumentation-urllib3 \
     opentelemetry-util-http
+
+# Install TorToiSe TTS
+RUN pip install TorToiSe
 
 # Add shared package
 COPY shared /shared
@@ -49,4 +63,3 @@ EXPOSE 8889
 
 # Start the TTS service
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8889"]
-
