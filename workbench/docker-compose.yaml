@@ -1,9 +1,17 @@
 version: "3.8"
 
 services:
-  local-nim:
-    image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.3.3
-    runtime: nvidia
+  # Add Ollama service
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - app-network
     deploy:
       resources:
         reservations:
@@ -11,18 +19,15 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-    ports:
-      - "8000:8000"
-    volumes:
-      - nim_cache:/opt/nim/.cache/
-    environment:
-      - NIM_MODEL_PROFILE=193649a2eb95e821309d6023a2cabb31489d3b690a9973c7ab5d1ff58b0aa7eb
-      - NGC_API_KEY=${NVIDIA_API_KEY:?Error NVIDIA_API_KEY not set}
-      - NVIDIA_VISIBLE_DEVICES=0
-    networks:
-      - app-network
-    profiles:
-      - local
+    # Optional: Pull models on startup
+    entrypoint: |
+      sh -c '
+      ollama serve &
+      pid=$$!
+      sleep 5
+      ollama pull llama3.3:70b-instruct-q2_K
+      wait $$pid
+      '
 
   redis:
     image: redis:latest
@@ -78,13 +83,14 @@ services:
     ports:
       - "8964:8964"
     environment:
-      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      # NVIDIA_API_KEY no longer needed for Ollama
       - REDIS_URL=redis://redis:6379
       - MODEL_CONFIG_PATH=/app/config/models.json
     volumes:
       - ../models.json:/app/config/models.json
     depends_on:
       - redis
+      - ollama
     networks:
       - app-network
 
@@ -182,9 +188,8 @@ volumes:
   redis_data:
   pdf_temp:
   minio_data:
-  nim_cache:
+  ollama_data:  # New volume for Ollama
 
 networks:
   app-network:
     driver: bridge
-
