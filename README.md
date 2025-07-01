@@ -2,9 +2,9 @@
 
 ## Overview
 
-This NVIDIA AI blueprint shows developers how to build an application that transforms PDFs into engaging audio content. Built on NVIDIA NIM, this blueprint is flexible, and can run securely on a private network, delivering actionable insight without sharing sensitive data. 
+This NVIDIA AI blueprint shows developers how to build an application that transforms PDFs into engaging audio content. The local version replaces NIM with an [Ollama](https://github.com/ollama/ollama) backend running the Llama 3.1 8B Instruct model.
 
-This blueprint has been modified to run completely locally. There are some leftover artifacts from the Elevelabs TTS pipeline that can be restored by renaming the .bak files. There's NO REQUIREMENT for an Elevenlabs API key. 
+This blueprint has been modified to run completely locally. Speech synthesis now relies on SpeechBrain's YourTTS model so no external TTS API keys are required.
 
 Set the Docker Compose profile to local before starting.
 
@@ -38,13 +38,9 @@ For more information about the PDF, Agent and TTS service flows, please refer to
 | Users running this blueprint with [NVIDIA AI Workbench](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/workbench/) should skip to the quickstart section [here](https://github.com/NVIDIA-AI-Blueprints/pdf-to-podcast/tree/main/workbench#quickstart)! |
 
 ## Software Components
-- NVIDIA NIM microservices
-   - Response generation (Inference)
-      - [NIM for meta/llama-3.1-8b-instruct](https://build.nvidia.com/meta/llama-3_1-8b-instruct)
-      - [NIM for meta/llama-3.1-70b-instruct](https://build.nvidia.com/meta/llama-3_1-70b-instruct)
-      - [NIM for meta/llama-3.1-405B-instruct](https://build.nvidia.com/meta/llama-3_1-405b-instruct)
+- Local LLM inference with [Ollama](https://github.com/ollama/ollama) running the Llama 3.1 8B Instruct model
 - Document ingest and extraction - [Docling](https://github.com/DS4SD/docling)
-- Text-to-speech - [ElevenLabs](https://elevenlabs.io/)
+- Text-to-speech - [SpeechBrain YourTTS](https://github.com/speechbrain/speechbrain)
 - Redis - [Redis](https://redis.io/)
 - Storage - [MinIO](https://minio.io/)
 
@@ -71,9 +67,7 @@ Below are the hardware requirements, these are dependent on how you choose to de
 
 ## Prerequisites
 - NVIDIA AI Enterprise developer licence required to local host NVIDIA NIM.
-- API catalog keys:
-   - NVIDIA [API catalog](https://build.nvidia.com/) or [NGC](https://org.ngc.nvidia.com/setup/personal-keys)
-   - [ElevenLabs](https://elevenlabs.io/docs/api-reference/authentication)
+ - API catalog keys are no longer required when running locally with Ollama.
 
 ## Quick Start Guide
 1. **Docker Compose**
@@ -101,9 +95,7 @@ NVIDIA Inference Microservices (NIM)
          - This will be used in the NVIDIA_API_KEY environment variable.
       - Click the "Generate API Key" option and then the "+ Generate API Key" button to create the API key.
 
-IMPORTANT:  This will be used in the NVIDIA_API_KEY environment variable below.
-
-[ElevenLabs](https://elevenlabs.io/docs/api-reference/authentication)
+IMPORTANT:  This will be used in the NVIDIA_API_KEY environment variable below if using NIM endpoints.
 
 3. **Clone the repo**
 
@@ -115,11 +107,8 @@ IMPORTANT:  This will be used in the NVIDIA_API_KEY environment variable below.
 
    ```bash
    #Create env file with required variables in /home/<username>/.local/bin/env  
-   echo "ELEVENLABS_API_KEY=your_key" >> .env
-   echo "NVIDIA_API_KEY=your_key" >> .env
    echo "MAX_CONCURRENT_REQUESTS=1" >> .env
    ```
-> **Note:** the ElevenLabs API key can handle concurrent requests. For local development, set MAX_CONCURRENT_REQUESTS=1 to avoid rate-limiting issues.
 
 5. **Install dependencies**
 

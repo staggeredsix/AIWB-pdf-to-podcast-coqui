@@ -15,12 +15,9 @@
 
 import gradio as gr
 import requests
-import tempfile
 import os
-import base64
 import json
 import sys
-import ast
 import re
 
 import uuid
@@ -176,7 +173,7 @@ with gr.Blocks(css=css, js=js_func) as demo:
         """Save the user's config file."""
         # validate json
         try:
-            config_data = json.loads(config_txt)
+            json.loads(config_txt)
         except Exception as err:
             raise SyntaxError(f"Error validating JSON syntax:\n{err}") from err
 

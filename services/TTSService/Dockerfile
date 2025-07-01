@@ -15,7 +15,7 @@ RUN apt-get update && \
 RUN pip install --upgrade pip
 RUN apt-get update && apt-get install -y espeak-ng espeak
 
-# Python packages (Coqui TTS, Torch, tracing, API, etc.)
+# Python packages (SpeechBrain TTS, Torch, tracing, API, etc.)
 RUN pip install \
     ujson \
     fastapi \
@@ -23,8 +23,10 @@ RUN pip install \
     redis \
     httpx \
     soundfile \
-    torch \
-    TTS \
+    torch --index-url https://download.pytorch.org/whl/cu121 \
+    speechbrain \
+    torchaudio --index-url https://download.pytorch.org/whl/cu121 \
+    librosa \
     opentelemetry-api \
     opentelemetry-sdk \
     opentelemetry-exporter-otlp \
