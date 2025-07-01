@@ -27,8 +27,6 @@ from typing import List
 
 import smtplib
 from email.message import EmailMessage
-from email.mime.base import MIMEBase
-from email import encoders
 
 # Add global TEST_USER_ID
 TEST_USER_ID = "test-userid"
