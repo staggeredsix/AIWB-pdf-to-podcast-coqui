@@ -1,3 +1,5 @@
+# services/TTSService/main.py
+
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -5,23 +7,36 @@ from typing import List, Dict, Optional
 import os
 import logging
 import asyncio
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor
-from io import BytesIO
+from functools import lru_cache
 
 import torch
-import torchaudio
+from TTS.api import TTS
 import soundfile as sf
-from speechbrain.pretrained import Tacotron2, HIFIGAN, SpeakerRecognition
+from io import BytesIO
 
 from shared.api_types import ServiceType, JobStatus
 from shared.job import JobStatusManager
 from shared.otel import OpenTelemetryInstrumentation, OpenTelemetryConfig
 
+# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="SpeechBrain TTS Service", debug=True)
+app = FastAPI(title="Coqui TTS Service", debug=True)
+
 MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "5"))
+
+# Accept flexible speaker roles
+SPEAKER_MAPPING = {
+    "bob": "p230",
+    "kate": "p225",
+    "speaker-1": "p230",
+    "speaker-2": "p225",
+    "speaker1": "p230",
+    "speaker2": "p225",
+}
 
 telemetry = OpenTelemetryInstrumentation()
 telemetry.initialize(
@@ -36,49 +51,6 @@ telemetry.initialize(
 
 job_manager = JobStatusManager(ServiceType.TTS, telemetry=telemetry)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-class YourTTSWrapper:
-    def __init__(self, tts, vocoder, speaker_encoder):
-        self.tts = tts
-        self.vocoder = vocoder
-        self.speaker_encoder = speaker_encoder
-
-    def encode_speaker(self, audio_tensor: torch.Tensor, sample_rate: int) -> torch.Tensor:
-        if audio_tensor.dim() == 2 and audio_tensor.shape[0] > 1:
-            audio_tensor = audio_tensor.mean(dim=0, keepdim=True)
-        if sample_rate != 16000:
-            audio_tensor = torchaudio.functional.resample(audio_tensor, sample_rate, 16000)
-        if audio_tensor.shape[1] > 16000 * 20:
-            audio_tensor = audio_tensor[:, :16000 * 20]
-        embedding = self.speaker_encoder.encode_batch(audio_tensor.to(device))
-        return embedding.squeeze(0)
-
-    def generate(self, text: str, speaker_embedding: torch.Tensor) -> torch.Tensor:
-        mel, _, _ = self.tts.encode_text(text, speaker_embedding.unsqueeze(0))
-        waveform = self.vocoder.decode_batch(mel)
-        return waveform.squeeze(0)
-
-
-tts = Tacotron2.from_hparams(
-    source="speechbrain/tts-tacotron2-ljspeech",
-    savedir="models/tts",
-    run_opts={"device": device},
-)
-vocoder = HIFIGAN.from_hparams(
-    source="speechbrain/tts-hifigan-ljspeech",
-    savedir="models/vocoder",
-    run_opts={"device": device},
-)
-speaker_encoder = SpeakerRecognition.from_hparams(
-    source="speechbrain/spkrec-ecapa-voxceleb",
-    savedir="models/encoder",
-    run_opts={"device": device},
-)
-
-model = YourTTSWrapper(tts, vocoder, speaker_encoder)
-
 
 class DialogueEntry(BaseModel):
     text: str
@@ -89,44 +61,85 @@ class DialogueEntry(BaseModel):
 class TTSRequest(BaseModel):
     dialogue: List[DialogueEntry]
     job_id: str
-    voice_mapping: Dict[str, str]
+    scratchpad: Optional[str] = ""
+    voice_mapping: Optional[Dict[str, str]] = SPEAKER_MAPPING
+
+
+class VoiceInfo(BaseModel):
+    voice_id: str
+    name: str
+    description: Optional[str] = None
 
 
 class TTSService:
     def __init__(self):
         self.thread_pool = ThreadPoolExecutor(max_workers=MAX_CONCURRENT_REQUESTS)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.tts_model = TTS(
+            model_name="tts_models/en/vctk/vits",
+            progress_bar=False,
+        ).to(device)
+        self.valid_speakers = self.tts_model.speakers
+        logger.info(f"[Init] Available speakers: {self.valid_speakers}")
 
-    def _process_dialogue(self, dialogue: List[DialogueEntry], mapping: Dict[str, str]) -> bytes:
-        audio_segments = []
-        sample_rate = 22050
-        for entry in dialogue:
-            emb_path = mapping.get(entry.speaker)
-            if not emb_path or not os.path.exists(emb_path):
-                raise Exception(f"Embedding file for {entry.speaker} not found")
-            embedding = torch.load(emb_path, map_location=device)
-            wav = model.generate(entry.text, embedding)
-            audio_segments.append(wav.cpu())
-        full_audio = torch.cat(audio_segments, dim=-1)
-        buf = BytesIO()
-        sf.write(buf, full_audio.numpy(), sample_rate, format="WAV")
-        buf.seek(0)
-        return buf.read()
+    @lru_cache(maxsize=1)
+    def get_available_voices(self) -> List[VoiceInfo]:
+        return [
+            VoiceInfo(voice_id="p230", name="Bob", description="Male speaker"),
+            VoiceInfo(voice_id="p225", name="Kate", description="Female speaker"),
+        ]
 
     async def process_job(self, job_id: str, request: TTSRequest):
-        with telemetry.tracer.start_as_current_span("tts.process_job"):
+        with telemetry.tracer.start_as_current_span("tts.process_job") as span:
             try:
                 job_manager.create_job(job_id)
                 combined = await asyncio.get_event_loop().run_in_executor(
-                    None, self._process_dialogue, request.dialogue, request.voice_mapping
+                    None, self._process_dialogue, request.dialogue
                 )
+                if not isinstance(combined, (bytes, bytearray)):
+                    raise Exception(f"TTS output is not bytes: {type(combined)}, value: {combined}")
                 job_manager.set_result(job_id, combined)
                 job_manager.update_status(job_id, JobStatus.COMPLETED, "Done")
             except Exception as e:
                 logger.error(f"[TTS ERROR] Job {job_id}: {e}")
                 job_manager.update_status(job_id, JobStatus.FAILED, str(e))
 
+    def _process_dialogue(self, dialogue: List[DialogueEntry]) -> bytes:
+        sample_rate = self.tts_model.synthesizer.output_sample_rate
+        all_audio = []
+
+        for idx, entry in enumerate(dialogue):
+            raw_speaker = entry.speaker.strip().lower()
+            speaker_id = SPEAKER_MAPPING.get(raw_speaker)
+
+            if speaker_id is None or speaker_id not in self.valid_speakers:
+                raise Exception(f"Invalid speaker ID '{speaker_id}' for role '{entry.speaker}'")
+
+            cleaned_text = bytes(entry.text, "utf-8").decode("unicode_escape").replace("\n", " ").strip()
+
+            logger.info(f"[TTS] Line {idx+1} → {entry.speaker} ({speaker_id}): {cleaned_text}")
+
+            wav = self.tts_model.tts(cleaned_text, speaker=speaker_id)
+
+            if not isinstance(wav, (list, np.ndarray)):
+                raise Exception(f"TTS output invalid for {entry.speaker}: {wav}")
+
+            logger.info(f"[TTS] Line {idx+1} → generated {len(wav)} samples")
+            all_audio.append(wav)
+
+        full_audio = np.concatenate(all_audio)
+        buf = BytesIO()
+        sf.write(buf, full_audio, sample_rate, format="WAV")
+        buf.seek(0)
+        return buf.read()
+
 
 tts_service = TTSService()
+
+
+@app.get("/voices")
+async def list_voices() -> List[VoiceInfo]:
+    return tts_service.get_available_voices()
 
 
 @app.post("/generate_tts", status_code=202)
@@ -148,9 +161,21 @@ async def get_output(job_id: str):
     data = job_manager.get_result(job_id)
     if not data:
         raise HTTPException(404, "Result not found")
-    return Response(content=data, media_type="audio/wav")
+    return Response(
+        content=data,
+        media_type="audio/wav",
+        headers={"Content-Disposition": "attachment; filename=output.wav"},
+    )
+
+
+@app.post("/cleanup")
+async def cleanup_jobs():
+    removed = job_manager.cleanup_old_jobs()
+    return {"removed": removed}
 
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy"}
+    voices = tts_service.get_available_voices()
+    return {"status": "healthy", "voices": len(voices), "max": MAX_CONCURRENT_REQUESTS}
+

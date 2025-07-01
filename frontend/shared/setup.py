@@ -24,6 +24,6 @@ setup(
         "pydantic",
         "httpx",
         "requests",
-        "ollama",
+        "langchain-nvidia-ai-endpoints",
     ],
 )
