@@ -18,6 +18,6 @@ setup(
         "pydantic",  # For data validation and serialization
         "httpx",  # For async HTTP requests
         "requests",  # For sync HTTP requests
-        "ollama",  # For local LLM inference
+        "langchain-nvidia-ai-endpoints",  # For AI model integration
     ],
 )

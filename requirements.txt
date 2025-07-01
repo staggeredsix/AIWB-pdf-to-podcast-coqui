@@ -13,4 +13,3 @@ ruff
 ujson
 jupyterlab>3.0
 gradio
-ollama
