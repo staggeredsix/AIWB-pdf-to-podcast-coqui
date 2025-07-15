@@ -17,8 +17,6 @@ import argparse
 from typing import List
 import uuid
 import random
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from pathlib import Path
 
 # Add global TEST_USER_ID
 TEST_USER_ID = "test-userid"
@@ -281,37 +279,6 @@ def test_saved_podcasts(base_url: str, job_id: str, max_retries=5, retry_delay=5
     print(f"Successfully retrieved audio data, size: {len(audio_data)} bytes")
 
 
-def test_nvidia_api_key():
-    api_key = os.getenv("NVIDIA_API_KEY")
-    if not api_key:
-        raise ValueError("NVIDIA_API_KEY needs to be set")
-    config_path = Path("./models.json")
-    if config_path.exists():
-        with config_path.open() as f:
-            configs = json.load(f)
-    else:
-        raise ValueError(f"model config at path {config_path} does not exist")
-
-    for model_type in ["reasoning", "json", "iteration"]:
-        model = configs[model_type]
-        llm = ChatNVIDIA(
-            model=model["name"],
-            base_url=model["api_base"],
-            nvidia_api_key=api_key,
-            max_tokens=100,
-        )
-        response = llm.invoke(
-            [
-                {
-                    "role": "user",
-                    "content": "What is the capital of France? Be brief",
-                }
-            ],
-        )
-        if "paris" not in response.content.lower():
-            print(f"Response {response.content} did not contain expected answer Paris")
-
-    print("Successfully validated all models with NVIDIA_API_KEY")
 
 
 def test_api(
@@ -550,7 +517,6 @@ if __name__ == "__main__":
     print(f"VDB mode: {args.vdb}")
     print(f"Using test user ID: {TEST_USER_ID}")
 
-    test_nvidia_api_key()
 
     test_api(
         args.api_url,

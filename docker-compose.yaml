@@ -1,26 +1,12 @@
 version: "3.8"
 
 services:
-  local-nim:
-    image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.3.3
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+  ollama:
+    image: ollama/ollama:latest
     ports:
-      - "8000:8000"
+      - "11434:11434"
     volumes:
-      - type: bind
-        source: ~/.cache/nim
-        target: /opt/nim/.cache/
-    environment:
-      - NIM_MODEL_PROFILE=193649a2eb95e821309d6023a2cabb31489d3b690a9973c7ab5d1ff58b0aa7eb
-      - NGC_API_KEY=${NVIDIA_API_KEY:?Error NVIDIA_API_KEY not set}
-      - NVIDIA_VISIBLE_DEVICES=0
+      - ollama_data:/root/.ollama
     networks:
       - app-network
     profiles:
@@ -129,4 +115,5 @@ networks:
 
 volumes:
   minio_data:
+  ollama_data:
 

@@ -24,6 +24,6 @@ setup(
         "pydantic",
         "httpx",
         "requests",
-        "langchain-nvidia-ai-endpoints",
+        "langchain-community",
     ],
 )

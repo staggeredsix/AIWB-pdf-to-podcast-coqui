@@ -43,11 +43,7 @@ Let's get started!
         celery-worker-1      | [2025-01-24 21:10:55,239: INFO/MainProcess] celery@ee170af41d1b ready.
         ```
 
-    * To run the blueprint with a _locally-running_ Llama 3.1 8B Instruct NVIDIA NIM, be sure to specify the ``local`` profile from the profile dropdown before selecting **Start**. The services are ready when you see the following in the compose logs:
-
-        ```
-        local-nim-1          | INFO 2025-01-24 21:14:50.213 metrics.py:351] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.0%, CPU KV cache usage: 0.0%.
-        ```
+    * To run the blueprint with a _locally-running_ Llama&nbsp;3&nbsp;8B model via Ollama, be sure to specify the ``local`` profile from the profile dropdown before selecting **Start**.
 
 
 8. (Option 1) Run the **Jupyter Notebook**. On the top right of the AI Workbench window, select **Open Jupyterlab**. Navigate to ``workbench/PDFtoPodcast.ipynb``, skip the setup sections, and get started immediately with the provided sample PDFs.

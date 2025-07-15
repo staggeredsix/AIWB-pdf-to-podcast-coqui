@@ -90,7 +90,7 @@ class TTSService:
         ]
 
     async def process_job(self, job_id: str, request: TTSRequest):
-        with telemetry.tracer.start_as_current_span("tts.process_job") as span:
+        with telemetry.tracer.start_as_current_span("tts.process_job"):
             try:
                 job_manager.create_job(job_id)
                 combined = await asyncio.get_event_loop().run_in_executor(
