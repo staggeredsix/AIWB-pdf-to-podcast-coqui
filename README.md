@@ -2,7 +2,7 @@
 
 ## Overview
 
-This NVIDIA AI blueprint shows developers how to build an application that transforms PDFs into engaging audio content. Built on NVIDIA NIM, this blueprint is flexible, and can run securely on a private network, delivering actionable insight without sharing sensitive data. 
+This NVIDIA AI blueprint shows developers how to build an application that transforms PDFs into engaging audio content. It now uses [Ollama](https://ollama.com/) with the Llama&nbsp;3&nbsp;8B Instruct model to run completely locally, delivering actionable insight without sharing sensitive data.
 
 This blueprint has been modified to run completely locally. There are some leftover artifacts from the Elevelabs TTS pipeline that can be restored by renaming the .bak files. There's NO REQUIREMENT for an Elevenlabs API key. 
 
@@ -37,43 +37,30 @@ For more information about the PDF, Agent and TTS service flows, please refer to
 | :-----------------------|
 | Users running this blueprint with [NVIDIA AI Workbench](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/workbench/) should skip to the quickstart section [here](https://github.com/NVIDIA-AI-Blueprints/pdf-to-podcast/tree/main/workbench#quickstart)! |
 
-## Software Components
-- NVIDIA NIM microservices
-   - Response generation (Inference)
-      - [NIM for meta/llama-3.1-8b-instruct](https://build.nvidia.com/meta/llama-3_1-8b-instruct)
-      - [NIM for meta/llama-3.1-70b-instruct](https://build.nvidia.com/meta/llama-3_1-70b-instruct)
-      - [NIM for meta/llama-3.1-405B-instruct](https://build.nvidia.com/meta/llama-3_1-405b-instruct)
+-## Software Components
+- Local LLM via [Ollama](https://ollama.com) using the Llama&nbsp;3&nbsp;8B Instruct model
 - Document ingest and extraction - [Docling](https://github.com/DS4SD/docling)
 - Text-to-speech - [ElevenLabs](https://elevenlabs.io/)
 - Redis - [Redis](https://redis.io/)
 - Storage - [MinIO](https://minio.io/)
 
-> **Note:** Since NVIDIA blueprints are adaptable to your specific business use case and/or infrastructure, the above software components are configurable. For example, to decrease the amount of GPU memory required, you can leverage a smaller Llama 3.1-8B NIM and disable GPU usage for Docling in docker-compose.yaml.
+> **Note:** Since NVIDIA blueprints are adaptable to your specific business use case and/or infrastructure, the above software components are configurable. For example, you can adjust the Llama&nbsp;3 model size or disable GPU usage for Docling in docker-compose.yaml.
 
 Docker Compose scripts are provided which spin up the microservices on a single node.  The Blueprint contains sample use-case PDFs but Developers can build upon this blueprint, by using their own PDFs based upon their specific use case.
 
 ## Hardware Requirements
 Below are the hardware requirements, these are dependent on how you choose to deploy the blueprint. There are 2 ways to deploy this blueprint:
 
-1. Default - Use NVIDIA API catalog NIM endpoints
-   - Can run on any non-gpu accelerated machine/VM
-      - 8 CPU cores
-      - 64 GB RAM
-      - 100GB disk space
-      - A public IP address is also required
-
-2. Locally host NVIDIA NIM
-   - [Meta Llama 3.1 8B Instruct Support Matrix](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html#llama-3-1-8b-instruct)
-   - [Meta Llama 3.1 70B Instruct Support Matrix](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html#llama-3-1-70b-instruct)
-   - [Meta Llama 3.1 405B Instruct Support Matrix](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html#llama-3-1-405b-instruct)
+1. Local deployment with Ollama
+   - Requires one NVIDIA GPU for TTS
+   - 8 CPU cores
+   - 64 GB RAM
+   - 100GB disk space
 
 > **Note:** To run the blueprint at scale and for faster preprocessing of PDFs, it is recommended to use GPU for running the PDF ingest/extraction pipeline.
 
 ## Prerequisites
-- NVIDIA AI Enterprise developer licence required to local host NVIDIA NIM.
-- API catalog keys:
-   - NVIDIA [API catalog](https://build.nvidia.com/) or [NGC](https://org.ngc.nvidia.com/setup/personal-keys)
-   - [ElevenLabs](https://elevenlabs.io/docs/api-reference/authentication)
+- [ElevenLabs](https://elevenlabs.io/docs/api-reference/authentication) API key
 
 ## Quick Start Guide
 1. **Docker Compose**
@@ -88,20 +75,7 @@ Install software requirements:
 - To configure Docker for GPU-accelerated containers, install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 - Install git
 
-2. **Obtain API keys:**
-
-NVIDIA Inference Microservices (NIM)
-- There are two possible methods to generate an API key for NIM:
-   - Sign in to the [NVIDIA Build](https://build.nvidia.com/explore/discover?signin=true) portal with your email.
-      - Click on any [model](https://build.nvidia.com/meta/llama-3_1-70b-instruct), then click "Get API Key", and finally click "Generate Key".
-   - Sign in to the [NVIDIA NGC](https://ngc.nvidia.com/) portal with your email.
-      - Select your organization from the dropdown menu after logging in. You must select an organization which has NVIDIA AI Enterprise (NVAIE) enabled.
-      - Click on your account in the top right, select "Setup" from the dropdown.
-      - Click the "Generate Personal Key" option and then the "+ Generate Personal Key" button to create your API key.
-         - This will be used in the NVIDIA_API_KEY environment variable.
-      - Click the "Generate API Key" option and then the "+ Generate API Key" button to create the API key.
-
-IMPORTANT:  This will be used in the NVIDIA_API_KEY environment variable below.
+2. **Obtain API key for ElevenLabs**
 
 [ElevenLabs](https://elevenlabs.io/docs/api-reference/authentication)
 
@@ -116,7 +90,6 @@ IMPORTANT:  This will be used in the NVIDIA_API_KEY environment variable below.
    ```bash
    #Create env file with required variables in /home/<username>/.local/bin/env  
    echo "ELEVENLABS_API_KEY=your_key" >> .env
-   echo "NVIDIA_API_KEY=your_key" >> .env
    echo "MAX_CONCURRENT_REQUESTS=1" >> .env
    ```
 > **Note:** the ElevenLabs API key can handle concurrent requests. For local development, set MAX_CONCURRENT_REQUESTS=1 to avoid rate-limiting issues.
@@ -175,13 +148,13 @@ To run the PDF extraction service on a separate machine, add the following to yo
    ```
 The make `model-dev` target will let you spin up only the docling service.
 
-2. **Use Self-hosted NIM**
+2. **Customize LLMs**
 
-By default this blueprint uses an ensemble of 3 LLMs to generate podcasts. The example uses the Llama 3.1-8B, Llama 3.1-70B, & Llama 3.1-405B NIMs for balanced performance and accuracy. To use a different model, update the models.json file with the desired model. The default models.json calls an NVIDIA-hosted API Catalog endpoints. This is the default configuration and is recommended for most users getting started with the blueprint but once you want to adapt the blueprint, locally hosted NIM endpoints are required.
+By default this blueprint uses an ensemble of Llama&nbsp;3 models via Ollama. To use a different model, update the models.json file with the desired model endpoint.
 
 3. **Change the Default Models and GPU Assignments**
 
-It is easy to swap out different pieces of the stack to optimize GPU usage for available hardware. For example, minimize GPU usage by swapping in the smaller Llama 3.1-8B NIM and disabling GPU usage for docling in docker-compose.yaml.
+It is easy to swap out different pieces of the stack to optimize GPU usage for available hardware. For example, minimize GPU usage by using the smaller Llama&nbsp;3&nbsp;8B model and disabling GPU usage for docling in docker-compose.yaml.
 
 4. **Enable Tracing**
 

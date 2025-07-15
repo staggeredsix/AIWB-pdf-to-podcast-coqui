@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_community.chat_models import ChatOllama
 from typing import List, Dict, Any, Optional, Union
 import logging
 import ujson as json
@@ -42,7 +42,7 @@ class ModelConfig:
 
 class LLMManager:
     """
-    A lightweight and user friendly wrapper over Langchain's ChatNVIDIA class. We use this class
+    A lightweight and user friendly wrapper over Langchain's ChatOllama class. We use this class
     to abstract away all Langchain functionalities including models, async/sync queries,
     structured outputs, types, streaming and more. It also comes with OTEL telemetry out of the box
     for all queries. It is specifically tailored for singular invocations.
@@ -56,18 +56,9 @@ class LLMManager:
     """
 
     DEFAULT_CONFIGS = {
-        "reasoning": {
-            "name": "meta/llama-3.1-405b-instruct",
-            "api_base": "https://integrate.api.nvidia.com/v1",
-        },
-        "iteration": {
-            "name": "meta/llama-3.1-405b-instruct",
-            "api_base": "https://integrate.api.nvidia.com/v1",
-        },
-        "json": {
-            "name": "meta/llama-3.1-70b-instruct",
-            "api_base": "https://integrate.api.nvidia.com/v1",
-        },
+        "reasoning": {"name": "llama3:8b", "api_base": "http://ollama:11434"},
+        "iteration": {"name": "llama3:8b", "api_base": "http://ollama:11434"},
+        "json": {"name": "llama3:8b", "api_base": "http://ollama:11434"},
     }
 
     def __init__(
@@ -83,7 +74,7 @@ class LLMManager:
         try:
             self.api_key = api_key
             self.telemetry = telemetry
-            self._llm_cache: Dict[str, ChatNVIDIA] = {}
+            self._llm_cache: Dict[str, ChatOllama] = {}
             self.model_configs = self._load_configurations(config_path)
             logger.info("Successfully initialized LLMManager")
         except Exception as e:
@@ -111,17 +102,15 @@ class LLMManager:
                 logger.warning("Using default configurations")
         return {key: ModelConfig.from_dict(config) for key, config in configs.items()}
 
-    def get_llm(self, model_key: str) -> ChatNVIDIA:
-        """Get or create a ChatNVIDIA model for the specified model key"""
+    def get_llm(self, model_key: str) -> ChatOllama:
+        """Get or create a ChatOllama model for the specified model key"""
         if model_key not in self.model_configs:
             raise ValueError(f"Unknown model key: {model_key}")
         if model_key not in self._llm_cache:
             config = self.model_configs[model_key]
-            self._llm_cache[model_key] = ChatNVIDIA(
+            self._llm_cache[model_key] = ChatOllama(
                 model=config.name,
                 base_url=config.api_base,
-                nvidia_api_key=self.api_key,
-                max_tokens=None,
             )
         return self._llm_cache[model_key]
 

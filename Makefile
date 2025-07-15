@@ -12,7 +12,7 @@ VERSION := 5.0
 SERVICES := api-service agent-service pdf-service tts-service
 
 # Required environment variables
-REQUIRED_ENV_VARS := ELEVENLABS_API_KEY NVIDIA_API_KEY MAX_CONCURRENT_REQUESTS
+REQUIRED_ENV_VARS := ELEVENLABS_API_KEY MAX_CONCURRENT_REQUESTS
 
 # Colors for terminal output
 RED := \033[0;31m
