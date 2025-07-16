@@ -148,15 +148,23 @@ To run the PDF extraction service on a separate machine, add the following to yo
    ```
 The make `model-dev` target will let you spin up only the docling service.
 
-2. **Customize LLMs**
+2. **Building docling on ARM64**
+
+When running on ARM64, the docling service may fail to build because the SudachiPy dependency requires compilation. The `PDFModelService` Dockerfiles have been updated to install the necessary build tools. If you encounter build errors, ensure Docker has network access and rebuild:
+
+```bash
+docker compose build pdf-model-service
+```
+
+3. **Customize LLMs**
 
 By default this blueprint uses an ensemble of Llama&nbsp;3 models via Ollama. To use a different model, update the models.json file with the desired model endpoint.
 
-3. **Change the Default Models and GPU Assignments**
+4. **Change the Default Models and GPU Assignments**
 
 It is easy to swap out different pieces of the stack to optimize GPU usage for available hardware. For example, minimize GPU usage by using the smaller Llama&nbsp;3&nbsp;8B model and disabling GPU usage for docling in docker-compose.yaml.
 
-4. **Enable Tracing**
+5. **Enable Tracing**
 
 We expose a Jaeger instance at http://localhost:16686/ for tracing. This is useful for debugging and monitoring the system.
 
